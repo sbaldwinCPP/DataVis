@@ -1,0 +1,10 @@
+Generated from this prompt to Gemini:
+write a python script to generate an html file that works as an interactive viewer for x, y, and z data, plotted in 3d
+
+Follow ups:
+#2
+use polars to read a csv file to input the data
+#3
+update it to read data from "./src/data/nyc-tmy-2023.csv"
+#4
+update to use 'Wind Direction', 'Wind Speed', and 'Temperature' instead of x, y, and z

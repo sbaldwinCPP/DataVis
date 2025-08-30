@@ -20,13 +20,13 @@ def create_3d_plot_html(csv_file_path, filename="3d_plot.html"):
         df = pl.read_csv(csv_file_path)
 
         # Check for required columns
-        required_cols = {'x', 'y', 'z'}
+        required_cols = {'Wind Direction', 'Wind Speed', 'Temperature'}
         if not required_cols.issubset(df.columns):
-            print(f"Error: The CSV file must contain 'x', 'y', and 'z' columns. Found: {df.columns}")
+            print(f"Error: The CSV file must contain 'Wind Direction', 'Wind Speed', and 'Temperature' columns. Found: {df.columns}")
             return
 
         # Convert Polars DataFrame to a list of dictionaries for JavaScript
-        data_dicts = df.select(['x', 'y', 'z']).to_dicts()
+        data_dicts = df.select(['Wind Direction', 'Wind Speed', 'Temperature']).to_dicts()
         data_json = json.dumps(data_dicts)
 
     except Exception as e:
@@ -40,7 +40,7 @@ def create_3d_plot_html(csv_file_path, filename="3d_plot.html"):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive 3D Plot</title>
+    <title>Wind Data 3D Plot</title>
     <style>
         body {{
             margin: 0;
@@ -69,7 +69,8 @@ def create_3d_plot_html(csv_file_path, filename="3d_plot.html"):
 </head>
 <body>
     <div class="info">
-        <h1>Interactive 3D Plot</h1>
+        <h1>Wind Data 3D Plot</h1>
+        <p>X-axis: Wind Direction, Y-axis: Wind Speed, Z-axis: Temperature</p>
         <p>Use your mouse to rotate and zoom.</p>
     </div>
     <div class="container" id="plot-container"></div>
@@ -126,7 +127,7 @@ def create_3d_plot_html(csv_file_path, filename="3d_plot.html"):
 
             data.forEach(pointData => {{
                 const sphere = new THREE.Mesh(geometry, material);
-                sphere.position.set(pointData.x, pointData.y, pointData.z);
+                sphere.position.set(pointData['Wind Direction'], pointData['Wind Speed'], pointData['Temperature']);
                 points.push(sphere);
                 scene.add(sphere);
             }});
