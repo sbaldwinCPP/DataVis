@@ -71,7 +71,7 @@ def create_3d_plot_html(csv_file_path, filename="3d_plot.html"):
     <div class="info">
         <h1>Wind Data 3D Plot</h1>
         <p>X-axis: Wind Direction, Y-axis: Wind Speed, Z-axis: Temperature</p>
-        <p>Use your mouse to rotate and zoom.</p>
+        <p>Use your mouse to rotate and zoom. Point colors are based on temperature (blue = cold, red = hot).</p>
     </div>
     <div class="container" id="plot-container"></div>
 
@@ -120,12 +120,29 @@ def create_3d_plot_html(csv_file_path, filename="3d_plot.html"):
             const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
             directionalLight.position.set(1, 1, 1);
             scene.add(directionalLight);
+            
+            // Find min/max temperature for color scaling
+            let minTemp = Infinity;
+            let maxTemp = -Infinity;
+            data.forEach(point => {{
+                if (point.Temperature < minTemp) minTemp = point.Temperature;
+                if (point.Temperature > maxTemp) maxTemp = point.Temperature;
+            }});
+
+            // Define the color scale
+            const startColor = new THREE.Color(0x0000ff); // Blue for cold
+            const endColor = new THREE.Color(0xff0000); // Red for hot
 
             // Create points from data
             const geometry = new THREE.SphereGeometry(0.5, 32, 32);
-            const material = new THREE.MeshBasicMaterial({{ color: 0x0077ff }});
 
             data.forEach(pointData => {{
+                // Normalize temperature to a 0-1 range
+                const normalizedTemp = (pointData.Temperature - minTemp) / (maxTemp - minTemp);
+                // Interpolate color based on normalized temperature
+                const pointColor = startColor.clone().lerp(endColor, normalizedTemp);
+                
+                const material = new THREE.MeshBasicMaterial({{ color: pointColor }});
                 const sphere = new THREE.Mesh(geometry, material);
                 sphere.position.set(pointData['Wind Direction'], pointData['Wind Speed'], pointData['Temperature']);
                 points.push(sphere);

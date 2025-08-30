@@ -10,3 +10,5 @@ update it to read data from "./src/data/nyc-tmy-2023.csv"
 update to use 'Wind Direction', 'Wind Speed', and 'Temperature' instead of x, y, and z
 #5
 when reading the data file, skip the first 2 rows
+#6
+use the Temperature column to set the color of the data
