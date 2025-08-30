@@ -2,16 +2,6 @@ import os
 import json
 import polars as pl
 
-
-'''
-Generated from this prompt to Gemini:
-write a python script to generate an html file that works as an interactive viewer for x, y, and z data, plotted in 3d
-
-Follow ups:
-use polars to read a csv file to input the data
-
-'''
-
 def create_3d_plot_html(csv_file_path, filename="3d_plot.html"):
     """
     Generates a self-contained HTML file for an interactive 3D scatter plot
@@ -175,23 +165,5 @@ def create_3d_plot_html(csv_file_path, filename="3d_plot.html"):
 
 # Run the function to create the HTML file when the script is executed
 if __name__ == "__main__":
-    # Create a dummy CSV file for demonstration
-    dummy_data = [
-        {'x': 10, 'y': 5, 'z': 8},
-        {'x': -5, 'y': -10, 'z': -3},
-        {'x': 15, 'y': 12, 'z': -5},
-        {'x': -12, 'y': 7, 'z': 10},
-        {'x': 0, 'y': 0, 'z': 0},
-        {'x': 2, 'y': 8, 'z': -10},
-        {'x': -8, 'y': -2, 'z': 12},
-        {'x': 6, 'y': -6, 'z': 6},
-        {'x': 14, 'y': 14, 'z': 14},
-        {'x': -14, 'y': -14, 'z': -14},
-    ]
-
-    df_dummy = pl.DataFrame(dummy_data)
-    dummy_csv_path = "sample_data.csv"
-    df_dummy.write_csv(dummy_csv_path)
-    print(f"Created a sample CSV file: {dummy_csv_path}")
-
-    create_3d_plot_html(dummy_csv_path)
+    csv_file_path = "./src/data/nyc-tmy-2023.csv"
+    create_3d_plot_html(csv_file_path)
