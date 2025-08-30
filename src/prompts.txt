@@ -8,3 +8,5 @@ use polars to read a csv file to input the data
 update it to read data from "./src/data/nyc-tmy-2023.csv"
 #4
 update to use 'Wind Direction', 'Wind Speed', and 'Temperature' instead of x, y, and z
+#5
+when reading the data file, skip the first 2 rows

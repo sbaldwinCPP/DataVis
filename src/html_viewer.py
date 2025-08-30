@@ -16,8 +16,8 @@ def create_3d_plot_html(csv_file_path, filename="3d_plot.html"):
         return
 
     try:
-        # Read the data from the CSV file using Polars
-        df = pl.read_csv(csv_file_path)
+        # Read the data from the CSV file using Polars, skipping the first 2 rows
+        df = pl.read_csv(csv_file_path, skip_rows=2)
 
         # Check for required columns
         required_cols = {'Wind Direction', 'Wind Speed', 'Temperature'}
