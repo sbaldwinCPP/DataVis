@@ -2,6 +2,16 @@ import os
 import json
 import polars as pl
 
+
+'''
+Generated from this prompt to Gemini:
+write a python script to generate an html file that works as an interactive viewer for x, y, and z data, plotted in 3d
+
+Follow ups:
+use polars to read a csv file to input the data
+
+'''
+
 def create_3d_plot_html(csv_file_path, filename="3d_plot.html"):
     """
     Generates a self-contained HTML file for an interactive 3D scatter plot
