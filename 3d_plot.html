@@ -42,29 +42,8 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
     <script>
-        // Sample data for plotting
-        // This can be replaced with any x, y, z data you want to visualize.
-        const data = [
-            { x: 10, y: 5, z: 8 },
-            { x: -5, y: -10, z: -3 },
-            { x: 15, y: 12, z: -5 },
-            { x: -12, y: 7, z: 10 },
-            { x: 0, y: 0, z: 0 },
-            { x: 2, y: 8, z: -10 },
-            { x: -8, y: -2, z: 12 },
-            { x: 6, y: -6, z: 6 },
-            { x: 14, y: 14, z: 14 },
-            { x: -14, y: -14, z: -14 },
-        ];
-        
-        // You can generate more data here if needed
-        // for (let i = 0; i < 100; i++) {
-        //     data.push({
-        //         x: Math.random() * 20 - 10,
-        //         y: Math.random() * 20 - 10,
-        //         z: Math.random() * 20 - 10,
-        //     });
-        // }
+        // Data loaded from the CSV file
+        const data = [{"x": 10, "y": 5, "z": 8}, {"x": -5, "y": -10, "z": -3}, {"x": 15, "y": 12, "z": -5}, {"x": -12, "y": 7, "z": 10}, {"x": 0, "y": 0, "z": 0}, {"x": 2, "y": 8, "z": -10}, {"x": -8, "y": -2, "z": 12}, {"x": 6, "y": -6, "z": 6}, {"x": 14, "y": 14, "z": 14}, {"x": -14, "y": -14, "z": -14}];
 
         // === Three.js Setup ===
 
@@ -136,7 +115,6 @@
         // Initialize and start the animation loop
         init();
         animate();
-
     </script>
 </body>
 </html>

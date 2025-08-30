@@ -1,15 +1,39 @@
 import os
+import json
+import polars as pl
 
-def create_3d_plot_html(filename="3d_plot.html"):
+def create_3d_plot_html(csv_file_path, filename="3d_plot.html"):
     """
-    Generates a self-contained HTML file for an interactive 3D scatter plot.
+    Generates a self-contained HTML file for an interactive 3D scatter plot
+    from data in a CSV file using Polars.
 
     Args:
+        csv_file_path (str): The path to the CSV file containing the data.
         filename (str): The name of the HTML file to be created.
     """
+    if not os.path.exists(csv_file_path):
+        print(f"Error: The file '{csv_file_path}' does not exist.")
+        return
 
-    # HTML content as a multi-line string
-    # All CSS and JavaScript are embedded within this single file.
+    try:
+        # Read the data from the CSV file using Polars
+        df = pl.read_csv(csv_file_path)
+
+        # Check for required columns
+        required_cols = {'x', 'y', 'z'}
+        if not required_cols.issubset(df.columns):
+            print(f"Error: The CSV file must contain 'x', 'y', and 'z' columns. Found: {df.columns}")
+            return
+
+        # Convert Polars DataFrame to a list of dictionaries for JavaScript
+        data_dicts = df.select(['x', 'y', 'z']).to_dicts()
+        data_json = json.dumps(data_dicts)
+
+    except Exception as e:
+        print(f"An error occurred while reading the CSV file: {e}")
+        return
+
+    # HTML content as a multi-line string with embedded data
     html_content = f"""
 <!DOCTYPE html>
 <html lang="en">
@@ -54,29 +78,8 @@ def create_3d_plot_html(filename="3d_plot.html"):
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
     <script>
-        // Sample data for plotting
-        // This can be replaced with any x, y, z data you want to visualize.
-        const data = [
-            {{ x: 10, y: 5, z: 8 }},
-            {{ x: -5, y: -10, z: -3 }},
-            {{ x: 15, y: 12, z: -5 }},
-            {{ x: -12, y: 7, z: 10 }},
-            {{ x: 0, y: 0, z: 0 }},
-            {{ x: 2, y: 8, z: -10 }},
-            {{ x: -8, y: -2, z: 12 }},
-            {{ x: 6, y: -6, z: 6 }},
-            {{ x: 14, y: 14, z: 14 }},
-            {{ x: -14, y: -14, z: -14 }},
-        ];
-        
-        // You can generate more data here if needed
-        // for (let i = 0; i < 100; i++) {{
-        //     data.push({{
-        //         x: Math.random() * 20 - 10,
-        //         y: Math.random() * 20 - 10,
-        //         z: Math.random() * 20 - 10,
-        //     }});
-        // }}
+        // Data loaded from the CSV file
+        const data = {data_json};
 
         // === Three.js Setup ===
 
@@ -148,7 +151,6 @@ def create_3d_plot_html(filename="3d_plot.html"):
         // Initialize and start the animation loop
         init();
         animate();
-
     </script>
 </body>
 </html>
@@ -163,4 +165,23 @@ def create_3d_plot_html(filename="3d_plot.html"):
 
 # Run the function to create the HTML file when the script is executed
 if __name__ == "__main__":
-    create_3d_plot_html()
+    # Create a dummy CSV file for demonstration
+    dummy_data = [
+        {'x': 10, 'y': 5, 'z': 8},
+        {'x': -5, 'y': -10, 'z': -3},
+        {'x': 15, 'y': 12, 'z': -5},
+        {'x': -12, 'y': 7, 'z': 10},
+        {'x': 0, 'y': 0, 'z': 0},
+        {'x': 2, 'y': 8, 'z': -10},
+        {'x': -8, 'y': -2, 'z': 12},
+        {'x': 6, 'y': -6, 'z': 6},
+        {'x': 14, 'y': 14, 'z': 14},
+        {'x': -14, 'y': -14, 'z': -14},
+    ]
+
+    df_dummy = pl.DataFrame(dummy_data)
+    dummy_csv_path = "sample_data.csv"
+    df_dummy.write_csv(dummy_csv_path)
+    print(f"Created a sample CSV file: {dummy_csv_path}")
+
+    create_3d_plot_html(dummy_csv_path)
