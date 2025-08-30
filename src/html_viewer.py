@@ -27,7 +27,21 @@ def create_3d_plot_html(csv_file_path, filename="3d_plot.html"):
 
         # Convert Polars DataFrame to a list of dictionaries for JavaScript
         data_dicts = df.select(['Wind Direction', 'Wind Speed', 'Temperature']).to_dicts()
-        data_json = json.dumps(data_dicts)
+
+        # Find min/max values for scaling and labeling
+        min_max_values = {
+            "Wind Direction": {"min": df['Wind Direction'].min(), "max": df['Wind Direction'].max()},
+            "Wind Speed": {"min": df['Wind Speed'].min(), "max": df['Wind Speed'].max()},
+            "Temperature": {"min": df['Temperature'].min(), "max": df['Temperature'].max()}
+        }
+        
+        # Combine data and ranges into a single JSON object
+        plot_data = {
+            "points": data_dicts,
+            "ranges": min_max_values
+        }
+
+        data_json = json.dumps(plot_data, indent=4)
 
     except Exception as e:
         print(f"An error occurred while reading the CSV file: {e}")
@@ -60,6 +74,7 @@ def create_3d_plot_html(csv_file_path, filename="3d_plot.html"):
             padding: 10px;
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            font-size: 14px;
         }}
         .container {{
             width: 100vw;
@@ -80,7 +95,11 @@ def create_3d_plot_html(csv_file_path, filename="3d_plot.html"):
 
     <script>
         // Data loaded from the CSV file
-        const data = {data_json};
+        const plotData = {data_json};
+        const data = plotData.points;
+        const ranges = plotData.ranges;
+        const AXIS_LENGTH = 30;
+        const AXIS_EXTENT = AXIS_LENGTH / 2;
 
         // === Three.js Setup ===
 
@@ -95,7 +114,8 @@ def create_3d_plot_html(csv_file_path, filename="3d_plot.html"):
 
             // Camera setup
             camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, 0.1, 1000);
-            camera.position.z = 30;
+            camera.position.set(AXIS_EXTENT * 1.5, AXIS_EXTENT * 1.5, AXIS_EXTENT * 1.5);
+            camera.lookAt(0, 0, 0);
 
             // Renderer setup
             renderer = new THREE.WebGLRenderer({{ antialias: true }});
@@ -104,37 +124,37 @@ def create_3d_plot_html(csv_file_path, filename="3d_plot.html"):
 
             // Controls
             controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true; // For a smoother experience
+            controls.enableDamping = true; 
             controls.dampingFactor = 0.05;
             controls.screenSpacePanning = false;
             controls.minDistance = 1;
-            controls.maxDistance = 100;
+            controls.maxDistance = 200;
 
-            // Add coordinate axes
-            const axesHelper = new THREE.AxesHelper(20);
-            scene.add(axesHelper);
-
-            // Add a light source
-            const light = new THREE.AmbientLight(0x404040); // Soft white light
-            scene.add(light);
+            // Add light sources
+            const ambientLight = new THREE.AmbientLight(0x404040); 
+            scene.add(ambientLight);
             const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
             directionalLight.position.set(1, 1, 1);
             scene.add(directionalLight);
             
+            // Add a bounding box for a cleaner visual
+            const boundingBox = new THREE.Box3(
+                new THREE.Vector3(-AXIS_EXTENT, -AXIS_EXTENT, -AXIS_EXTENT),
+                new THREE.Vector3(AXIS_EXTENT, AXIS_EXTENT, AXIS_EXTENT)
+            );
+            const boxHelper = new THREE.Box3Helper(boundingBox, 0x888888);
+            scene.add(boxHelper);
+
+            // Create points from data
+            const geometry = new THREE.SphereGeometry(0.5, 32, 32);
+
             // Find min/max temperature for color scaling
-            let minTemp = Infinity;
-            let maxTemp = -Infinity;
-            data.forEach(point => {{
-                if (point.Temperature < minTemp) minTemp = point.Temperature;
-                if (point.Temperature > maxTemp) maxTemp = point.Temperature;
-            }});
+            let minTemp = ranges['Temperature'].min;
+            let maxTemp = ranges['Temperature'].max;
 
             // Define the color scale
             const startColor = new THREE.Color(0x0000ff); // Blue for cold
             const endColor = new THREE.Color(0xff0000); // Red for hot
-
-            // Create points from data
-            const geometry = new THREE.SphereGeometry(0.5, 32, 32);
 
             data.forEach(pointData => {{
                 // Normalize temperature to a 0-1 range
@@ -144,13 +164,106 @@ def create_3d_plot_html(csv_file_path, filename="3d_plot.html"):
                 
                 const material = new THREE.MeshBasicMaterial({{ color: pointColor }});
                 const sphere = new THREE.Mesh(geometry, material);
-                sphere.position.set(pointData['Wind Direction'], pointData['Wind Speed'], pointData['Temperature']);
+
+                // Scale data to fit within the centered range
+                const x = THREE.MathUtils.mapLinear(pointData['Wind Direction'], ranges['Wind Direction'].min, ranges['Wind Direction'].max, -AXIS_EXTENT, AXIS_EXTENT);
+                const y = THREE.MathUtils.mapLinear(pointData['Wind Speed'], ranges['Wind Speed'].min, ranges['Wind Speed'].max, -AXIS_EXTENT, AXIS_EXTENT);
+                const z = THREE.MathUtils.mapLinear(pointData['Temperature'], ranges['Temperature'].min, ranges['Temperature'].max, -AXIS_EXTENT, AXIS_EXTENT);
+                
+                sphere.position.set(x, y, z);
                 points.push(sphere);
                 scene.add(sphere);
             }});
 
+            // Add axes and labels
+            createAxesAndLabels();
+            
             // Handle window resizing
             window.addEventListener('resize', onWindowResize, false);
+        }}
+        
+        function createTextCanvas(text) {{
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            const fontSize = 100;
+            context.font = `${{fontSize}}px Arial`;
+            const textMetrics = context.measureText(text);
+            const textWidth = textMetrics.width;
+            const textHeight = fontSize;
+            canvas.width = textWidth;
+            canvas.height = textHeight;
+            context.font = `${{fontSize}}px Arial`;
+            context.fillStyle = 'black';
+            context.fillText(text, 0, fontSize);
+            return canvas;
+        }}
+
+        function createLabel(text, position) {{
+            const canvas = createTextCanvas(text);
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({{ map: texture }});
+            const sprite = new THREE.Sprite(material);
+            sprite.scale.set(canvas.width / 50, canvas.height / 50, 1);
+            sprite.position.copy(position);
+            scene.add(sprite);
+            return sprite;
+        }}
+
+        function createAxesAndLabels() {{
+            const tickCount = 5;
+            const xStep = (ranges['Wind Direction'].max - ranges['Wind Direction'].min) / (tickCount - 1);
+            const yStep = (ranges['Wind Speed'].max - ranges['Wind Speed'].min) / (tickCount - 1);
+            const zStep = (ranges['Temperature'].max - ranges['Temperature'].min) / (tickCount - 1);
+            
+            // Draw axis lines and labels on the plot boundary
+            
+            // X-Axis (Wind Direction)
+            const xMaterial = new THREE.LineBasicMaterial({{ color: 0xff0000 }});
+            const xGeometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(-AXIS_EXTENT, -AXIS_EXTENT, -AXIS_EXTENT), 
+                new THREE.Vector3(AXIS_EXTENT, -AXIS_EXTENT, -AXIS_EXTENT)
+            ]);
+            const xAxis = new THREE.Line(xGeometry, xMaterial);
+            scene.add(xAxis);
+            createLabel("Wind Direction", new THREE.Vector3(AXIS_EXTENT + 5, -AXIS_EXTENT, -AXIS_EXTENT));
+
+            // Y-Axis (Wind Speed)
+            const yMaterial = new THREE.LineBasicMaterial({{ color: 0x00ff00 }});
+            const yGeometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(-AXIS_EXTENT, -AXIS_EXTENT, -AXIS_EXTENT), 
+                new THREE.Vector3(-AXIS_EXTENT, AXIS_EXTENT, -AXIS_EXTENT)
+            ]);
+            const yAxis = new THREE.Line(yGeometry, yMaterial);
+            scene.add(yAxis);
+            createLabel("Wind Speed", new THREE.Vector3(-AXIS_EXTENT, AXIS_EXTENT + 5, -AXIS_EXTENT));
+
+            // Z-Axis (Temperature)
+            const zMaterial = new THREE.LineBasicMaterial({{ color: 0x0000ff }});
+            const zGeometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(-AXIS_EXTENT, -AXIS_EXTENT, -AXIS_EXTENT), 
+                new THREE.Vector3(-AXIS_EXTENT, -AXIS_EXTENT, AXIS_EXTENT)
+            ]);
+            const zAxis = new THREE.Line(zGeometry, zMaterial);
+            scene.add(zAxis);
+            createLabel("Temperature", new THREE.Vector3(-AXIS_EXTENT, -AXIS_EXTENT, AXIS_EXTENT + 5));
+
+            // Add tick marks and values
+            for (let i = 0; i < tickCount; i++) {{
+                // X-axis ticks
+                const xVal = ranges['Wind Direction'].min + i * xStep;
+                const xPos = THREE.MathUtils.mapLinear(xVal, ranges['Wind Direction'].min, ranges['Wind Direction'].max, -AXIS_EXTENT, AXIS_EXTENT);
+                createLabel(xVal.toFixed(0), new THREE.Vector3(xPos, -AXIS_EXTENT - 2, -AXIS_EXTENT));
+
+                // Y-axis ticks
+                const yVal = ranges['Wind Speed'].min + i * yStep;
+                const yPos = THREE.MathUtils.mapLinear(yVal, ranges['Wind Speed'].min, ranges['Wind Speed'].max, -AXIS_EXTENT, AXIS_EXTENT);
+                createLabel(yVal.toFixed(1), new THREE.Vector3(-AXIS_EXTENT - 2, yPos, -AXIS_EXTENT));
+
+                // Z-axis ticks
+                const zVal = ranges['Temperature'].min + i * zStep;
+                const zPos = THREE.MathUtils.mapLinear(zVal, ranges['Temperature'].min, ranges['Temperature'].max, -AXIS_EXTENT, AXIS_EXTENT);
+                createLabel(zVal.toFixed(1), new THREE.Vector3(-AXIS_EXTENT - 2, -AXIS_EXTENT, zPos));
+            }}
         }}
 
         function onWindowResize() {{
@@ -162,7 +275,7 @@ def create_3d_plot_html(csv_file_path, filename="3d_plot.html"):
         // Animation loop
         function animate() {{
             requestAnimationFrame(animate);
-            controls.update(); // Only required if controls.enableDamping is set to true
+            controls.update(); 
             renderer.render(scene, camera);
         }}
 

@@ -12,3 +12,5 @@ update to use 'Wind Direction', 'Wind Speed', and 'Temperature' instead of x, y,
 when reading the data file, skip the first 2 rows
 #6
 use the Temperature column to set the color of the data
+only 1/4 of the plot area is used, adjust the axes to fill the plot area
+the axis lines and labels are in the center of the plot, move them to the outside on the plot
